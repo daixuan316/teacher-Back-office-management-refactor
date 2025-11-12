@@ -14,7 +14,11 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
-    "vue": "^3.5.22"
+    "axios": "^1.13.2",
+    "pinia": "^3.0.4",
+    "primevue": "^4.4.1",
+    "vue": "^3.5.22",
+    "vue-router": "^4.0.13"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
