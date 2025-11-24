@@ -4,6 +4,8 @@ import axios, {
   type AxiosResponse,
   type AxiosError,
 } from "axios";
+import { getActivePinia } from "pinia";
+import { useUserStore } from "@/store/user";
 import Message from "primevue/message"; // 如果使用 Element Plus
 // 或者使用 PrimeVue 的 Toast
 // import { useToast } from 'primevue/usetoast'
@@ -24,14 +26,32 @@ const service: AxiosInstance = axios.create({
   },
 });
 
+// 获取 token 的辅助函数（优先从 store 获取，回退到本地存储）
+const getToken = (): string => {
+  try {
+    // 尝试从 Pinia store 获取
+    const pinia = getActivePinia();
+    if (pinia) {
+      const userStore = useUserStore();
+      if (userStore.token) {
+        return userStore.token;
+      }
+    }
+  } catch (error) {
+    // Pinia 未初始化时，回退到本地存储
+  }
+  
+  // 回退到从本地存储读取
+  return localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+};
+
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
     // 在发送请求之前做些什么
 
     // 1. 添加 token
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -85,8 +105,20 @@ service.interceptors.response.use(
 
       case 401:
         // 未授权，跳转登录
-        localStorage.removeItem("token");
-        sessionStorage.removeItem("token");
+        try {
+          const pinia = getActivePinia();
+          if (pinia) {
+            const userStore = useUserStore();
+            userStore.logout();
+          } else {
+            // 回退到手动清除
+            localStorage.removeItem("token");
+            sessionStorage.removeItem("token");
+          }
+        } catch (error) {
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+        }
         // ElMessage.error('登录已过期，请重新登录')
         console.error("登录已过期，请重新登录");
         // 跳转到登录页
@@ -132,8 +164,20 @@ service.interceptors.response.use(
           console.error("请求参数错误");
           break;
         case 401:
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
+          try {
+            const pinia = getActivePinia();
+            if (pinia) {
+              const userStore = useUserStore();
+              userStore.logout();
+            } else {
+              // 回退到手动清除
+              localStorage.removeItem("token");
+              sessionStorage.removeItem("token");
+            }
+          } catch (error) {
+            localStorage.removeItem("token");
+            sessionStorage.removeItem("token");
+          }
           // ElMessage.error('登录已过期，请重新登录')
           console.error("登录已过期");
           window.location.href = "/login";
